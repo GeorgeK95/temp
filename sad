@@ -1,0 +1,61 @@
+@Composable
+fun OffsetBeforeScrollList() {
+    val listOffsetY = remember { mutableStateOf(0f) }
+    val listScrollState = rememberLazyListState()
+
+    // Control when drag gets passed to LazyColumn
+    val dragThreshold = 200f // or however much you want to offset before scroll takes over
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .pointerInput(Unit) {
+                // Await drag gestures manually
+                awaitPointerEventScope {
+                    while (true) {
+                        val down = awaitPointerEvent().changes.firstOrNull() ?: continue
+                        if (down.pressed) {
+                            val drag = awaitDragOrCancellation(down.id)
+                            drag?.let {
+                                val newOffset = listOffsetY.value + it.positionChange().y
+                                listOffsetY.value = newOffset.coerceAtLeast(0f)
+                                it.consume()
+                            }
+                        }
+                    }
+                }
+            }
+    ) {
+        LazyColumn(
+            state = listScrollState,
+            modifier = Modifier
+                .offset { IntOffset(0, listOffsetY.value.roundToInt()) }
+                .nestedScroll(
+                    object : NestedScrollConnection {
+                        override fun onPreScroll(
+                            available: Offset,
+                            source: NestedScrollSource
+                        ): Offset {
+                            // Intercept scroll only if offset hasn't passed threshold
+                            return if (listOffsetY.value > 0f) {
+                                val consumed = Offset(0f, available.y)
+                                listOffsetY.value = (listOffsetY.value + available.y).coerceAtLeast(0f)
+                                consumed
+                            } else {
+                                Offset.Zero
+                            }
+                        }
+                    }
+                )
+        ) {
+            items(50) {
+                Text(
+                    text = "Item #$it",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                )
+            }
+        }
+    }
+}
