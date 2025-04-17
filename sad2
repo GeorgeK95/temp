@@ -1,0 +1,76 @@
+@Composable
+fun FadedLinesText(
+    text: String,
+    modifier: Modifier = Modifier,
+    firstLineAlpha: Float = 1f,
+    remainingLinesAlpha: Float = 0.6f,
+    style: TextStyle = TextStyle(fontSize = 16.sp)
+) {
+    var textLayoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
+
+    val annotatedText = remember(textLayoutResult, text) {
+        textLayoutResult?.let { layoutResult ->
+            val firstLineEnd = layoutResult.getLineVisibleEnd(0)
+
+            buildAnnotatedString {
+                if (firstLineEnd > 0) {
+                    withStyle(SpanStyle(alpha = firstLineAlpha)) {
+                        append(text.substring(0, firstLineEnd))
+                    }
+                }
+                if (firstLineEnd < text.length) {
+                    withStyle(SpanStyle(alpha = remainingLinesAlpha)) {
+                        append(text.substring(firstLineEnd))
+                    }
+                }
+            }
+        } ?: AnnotatedString(text)
+    }
+
+    Text(
+        text = annotatedText,
+        style = style,
+        modifier = modifier,
+        onTextLayout = { textLayoutResult = it }
+    )
+}
+
+
+
+@Composable
+fun FadedLinesText(
+    text: String,
+    modifier: Modifier = Modifier,
+    firstLineAlpha: Float = 1f,
+    remainingLinesAlpha: Float = 0.6f,
+    style: TextStyle = TextStyle(fontSize = 16.sp)
+) {
+    var textLayoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
+    var annotatedText by remember { mutableStateOf<AnnotatedString>(AnnotatedString(text)) }
+
+    LaunchedEffect(textLayoutResult, text) {
+        annotatedText = textLayoutResult?.let { layoutResult ->
+            val firstLineEnd = layoutResult.getLineVisibleEnd(0)
+
+            buildAnnotatedString {
+                if (firstLineEnd > 0) {
+                    withStyle(SpanStyle(alpha = firstLineAlpha)) {
+                        append(text.substring(0, firstLineEnd))
+                    }
+                }
+                if (firstLineEnd < text.length) {
+                    withStyle(SpanStyle(alpha = remainingLinesAlpha)) {
+                        append(text.substring(firstLineEnd))
+                    }
+                }
+            }
+        } ?: AnnotatedString(text)
+    }
+
+    Text(
+        text = annotatedText,
+        style = style,
+        modifier = modifier,
+        onTextLayout = { textLayoutResult = it }
+    )
+}
